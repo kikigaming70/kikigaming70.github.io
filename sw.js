@@ -1,6 +1,6 @@
 // Service worker : jeu jouable hors ligne.
 // Pour forcer une mise à jour chez les joueurs, change le numéro de VERSION.
-const VERSION = 'bus2d-v1';
+const VERSION = 'bus2d-v2';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
