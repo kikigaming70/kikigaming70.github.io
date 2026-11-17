@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Bus 2D",
+  "short_name": "Bus 2D",
+  "description": "Jeu de bus 2D chill et incrémental",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1b1c1a",
+  "theme_color": "#1b1c1a",
+  "lang": "fr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
