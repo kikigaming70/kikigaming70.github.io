@@ -110,7 +110,7 @@ function weather(W,H){
   cx.globalAlpha=1;
 }
 const UPN=['Moteur turbo','Tarif premium','Grand bus','Aimant à arrêts','Turbo combo','Gestion de flotte','Suspension','Publicité'],UPD=['+8 % vitesse max','+20 % par passager','+1 passager par arrêt','validation de plus loin','combo max +1, plus durable','+25 % revenu des bus autonomes','+10 % de maniabilité','+10 % de gains partout'];
-const upCost=i=>Math.round([60,50,80,70,90,120,100,150][i]*Math.pow(1.45,up[i])),flCost=()=>Math.round(150*Math.pow(1.6,fleet)),fare=()=>2*(1+.2*up[1]);
+const upCost=i=>Math.round([60,50,80,70,90,120,100,150][i]*Math.pow(1.45,up[i])),flCost=()=>Math.round(150*Math.pow(1.6,fleet)),fare=()=>5*(1+.2*up[1]);
 function pop(x,y,s){fl.push({x,y,s,l:1.4})}
 function save(){try{localStorage.setItem('bus2d',JSON.stringify({money,up,fleet,own,cur,mapOwn,mapi,streak,stars,stt,og,day:new Date().toDateString(),ts:Date.now()}))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem('bus2d'));if(d){money=d.money||0;(d.up||[]).forEach((v,i)=>up[i]=v);fleet=d.fleet||0;own=d.own||own;cur=d.cur||0;mapOwn=d.mapOwn||mapOwn;mapi=d.mapi||0;streak=d.streak||0;stars=d.stars||0;stt=d.stt||stt;og=d.og||og;
@@ -198,7 +198,7 @@ function hit(){
   const L=skin.len*.35,ps=[-L,0,L].map(d=>[bus.x+Math.cos(bus.a)*d,bus.y+Math.sin(bus.a)*d]);
   return ps.some(([x,y])=>obs.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+2.2)||(rvD(x,y)<13&&roadD(x,y)>0)||cars.some(c=>Math.hypot(c.x-x,c.y-y)<(c.fb?5:3.6)));
 }
-function toggleMusic(){mu=1-mu;if(mu)AC().resume();$('mb').style.opacity=mu?1:.55;$('mb').blur()}
+function toggleMusicOld(){mu=1-mu;if(mu)AC().resume();$('mb').style.opacity=mu?1:.55;$('mb').blur()}
 function note(){try{
   const a=AC(),t=a.currentTime,rt=[0,5,7,3][ni++>>3&3],f=[0,2,4,7,9,12][Math.random()*6|0];
   const pl=(fr,ty,v,d)=>{const o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=fr;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.06);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+.1)};
@@ -406,6 +406,56 @@ function doorSnd(o){try{
   k.type='triangle';k.frequency.setValueAtTime(900,at);k.frequency.exponentialRampToValueAtTime(300,at+.03);
   kg.gain.setValueAtTime(.025,at);kg.gain.exponentialRampToValueAtTime(.001,at+.04);k.connect(kg);kg.connect(a.destination);k.start(at);k.stop(at+.05);
 }catch(e){}}
+const STN=[null,{n:'Chill FM',bpm:60},{n:'Jazz Café',bpm:92},{n:'Lo-fi Beats',bpm:76},{n:'Électro Night',bpm:112}];
+let stn=0,rt0=0,bt=0,dop=0,dbt=0;
+const fq=n=>261.63*Math.pow(2,n/12);
+function nt(a,f,t,d,v,ty,lp){const o=a.createOscillator(),g=a.createGain();o.type=ty||'sine';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+Math.min(.04,d/4));g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=o;if(lp){const l=a.createBiquadFilter();l.type='lowpass';l.frequency.value=lp;o.connect(l);n=l}n.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+.05)}
+function nz(a,t,d,v,f,ty){const len=Math.max(1,a.sampleRate*d|0),b=a.createBuffer(1,len,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=(Math.random()*2-1)*(1-i/len);const s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();s.buffer=b;fl.type=ty||'highpass';fl.frequency.value=f;g.gain.value=v;s.connect(fl);fl.connect(g);g.connect(a.destination);s.start(t)}
+function kick(a,t,v){const o=a.createOscillator(),g=a.createGain();o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.22)}
+function radioSet(i){
+  stn=i;bt=0;rt0=0;const b=$('mb');b.textContent=stn?'📻 '+STN[stn].n:'📻 Radio (M)';b.style.opacity=stn?1:.55;
+  if(stn&&snd){try{const a=AC();a.resume();nz(a,a.currentTime,.5,.07,1500,'bandpass');$('msg').textContent='📻 '+STN[stn].n;setTimeout(()=>{if($('msg').textContent.startsWith('📻'))$('msg').textContent=''},2500)}catch(e){}}
+}
+function toggleMusic(){radioSet((stn+1)%STN.length);$('mb').blur()}
+function radio(){
+  if(!stn||!snd)return;
+  let a;try{a=AC()}catch(e){return}
+  if(a.state!=='running')return;
+  const t=a.currentTime,sp=60/STN[stn].bpm/2;
+  if(!rt0||rt0<t-1)rt0=t+.05;
+  while(rt0<t+.3){radioStep(a,rt0,bt++,sp);rt0+=stn===2?(bt%2?sp*1.34:sp*.66):sp}
+}
+function radioStep(a,t,b,sp){
+  const r=Math.random;
+  if(stn===1){const root=[0,5,7,3][b>>5&3],sc=[0,2,4,7,9,12];if(r()<.45)nt(a,fq(root+sc[r()*6|0]),t,2.8,.04);if(b%16===0)nt(a,fq(root-24),t,7,.06,'triangle',400)}
+  else if(stn===2){
+    const ci=b>>3&3,root=[2,7,0,9][ci]-12,ty=[[0,3,7,10],[0,4,7,10],[0,4,7,11],[0,4,7,10]][ci],i8=b%8;
+    if(i8%2===0)nt(a,fq(root-12+ty[i8/2]),t,.45,.09,'triangle',500);
+    if(i8===0||i8===3||(i8===5&&r()<.5))ty.slice(1).forEach(x=>{nt(a,fq(root+x),t,1.3,.022);nt(a,fq(root+x)*2,t,.6,.006)});
+    nz(a,t,.07,i8%2?.007:.012,8000);
+  }else if(stn===3){
+    const i8=b%8,ch=[[5,9,12,16],[4,7,11,14],[2,5,9,12],[0,4,7,11]][b>>4&3];
+    if(b%16===0)ch.forEach(x=>nt(a,fq(x-12),t,3.4,.03,'triangle',900));
+    if(i8===0||i8===5)kick(a,t,.22);
+    if(i8===4)nz(a,t,.14,.06,1800,'bandpass');
+    nz(a,t,.04,i8%2?.01:.005,7000);
+    if(r()<.3)nt(a,fq(ch[r()*4|0]+12),t,1.2,.02);
+    if(r()<.05)nz(a,t,.02,.04,3000);
+  }else{
+    const i8=b%16,root=[0,0,-2,-4][b>>4&3];
+    if(b%2===0)kick(a,t,.2);else nz(a,t,.05,.02,8000);
+    if(i8%4===2)nz(a,t,.08,.04,2500,'bandpass');
+    nt(a,fq(root-24),t,.22,.07,'sawtooth',300+(i8%4)*80);
+    nt(a,fq(root+[0,3,7,10,12,10,7,3][b%8]),t,.16,.025,'square',1400+Math.sin(b/16)*600);
+  }
+}
+function doorAlarm(dt){
+  if(!door){dop=0;dbt=0;return}
+  dop+=dt;dbt-=dt;const mv=Math.abs(bus.v)>1;
+  if(dbt>0||(!mv&&dop<6))return;
+  dbt=mv?.35:1.2;
+  try{const a=AC();if(!snd||a.state!=='running')return;tone(a,'square',mv?1500:1000,mv?1500:1000,a.currentTime,.1,.035)}catch(e){}
+}
 function mini(){
   if(!bus||!skin)return;const mx=$('mm').getContext('2d'),m=140,sc=m/1200,o=m/2;
   mx.clearRect(0,0,m,m);mx.fillStyle=MP().g;mx.fillRect(0,0,m,m);
@@ -485,7 +535,7 @@ function update(dt){
   bus.v=Math.max(-6,bus.v>vmax?Math.max(vmax,bus.v-30*dt):bus.v);
   const st=((rt?1:0)-(lf?1:0))*1.7*(1+.1*up[6])*Math.max(-1,Math.min(1,bus.v/6));
   bus.a+=st*dt;
-  tod+=dt;wt-=dt;mt-=dt;if(mu&&mt<0){mt=.9+Math.random()*1.3;note()}{const v=inc()*dt;money+=v;stt.earn+=v}ct-=dt;if(ct<=0)combo=1;oc-=dt;if(oc<0){oc=1;objCheck()}sv-=dt;if(sv<0){save();sv=5}rs-=dt;if(rs<0){rs=.5;if($('shop').style.display==='flex')renderShop()}if(wt<0){rain=Math.random()<.35?1:0;wt=40+Math.random()*60}
+  tod+=dt;wt-=dt;radio();{const v=inc()*dt;money+=v;stt.earn+=v}ct-=dt;if(ct<=0)combo=1;oc-=dt;if(oc<0){oc=1;objCheck()}sv-=dt;if(sv<0){save();sv=5}rs-=dt;if(rs<0){rs=.5;if($('shop').style.display==='flex')renderShop()}if(wt<0){rain=Math.random()<.35?1:0;wt=40+Math.random()*60}
   walk(dt);lightCheck();sfx();cars.forEach(c=>{if(!lights.some(l=>{const d=Math.hypot(l.x-c.x,l.y-c.y);return d<11&&d>5&&(l.x-c.x)*Math.cos(c.a)+(l.y-c.y)*Math.sin(c.a)>0&&redFor(l,c.a)}))moveCar(dt,c)});
   const ox=bus.x,oy=bus.y;bus.x+=Math.cos(bus.a)*bus.v*dt;bus.y+=Math.sin(bus.a)*bus.v*dt;
   if(hit()){thud();bus.x=ox;bus.y=oy;bus.v*=-.3}
@@ -493,7 +543,7 @@ function update(dt){
   if(t&&Math.hypot(t.x-bus.x,t.y-bus.y)<12+4*up[3]&&Math.abs(bus.v)<2+.5*up[3]&&door){t.done=true;score++;board(t);chime();const n=1+(Math.random()*5|0)+up[2]+BUS[cur].cap,g=n*fare()*combo*mult();pax+=n;money+=g;stt.stops++;stt.pax+=n;stt.earn+=g;combo=Math.min(5+up[4],+(combo+.25).toFixed(2));ct=25+3*up[4];if(score%25===0){money+=g*5;pop(t.x,t.y-8,'Coffre ! +'+Math.round(g*5)+' €')}pop(t.x,t.y,'+'+Math.round(g)+' €')}
   if(!stops.find(s=>!s.done))placeStops();
   
-  $('dr').textContent=door?'ouvertes':(t&&Math.hypot(t.x-bus.x,t.y-bus.y)<16&&Math.abs(bus.v)<3?'fermées — appuie sur 1':'fermées');skin.open=door;if(door&&Math.abs(bus.v)>4)door=0;if(door!==ld){ld=door;doorSnd(door)}$('sc').textContent=score;$('px').textContent=pax;$('mo').textContent=Math.floor(money).toLocaleString('fr-FR');$('cb').textContent=combo;$('sp').textContent=Math.round(Math.abs(bus.v)*3.6);
+  $('dr').textContent=door?'ouvertes':(t&&Math.hypot(t.x-bus.x,t.y-bus.y)<16&&Math.abs(bus.v)<3?'fermées — appuie sur 1':'fermées');skin.open=door;if(door&&Math.abs(bus.v)>4)door=0;if(door!==ld){ld=door;doorSnd(door)}doorAlarm(dt);$('sc').textContent=score;$('px').textContent=pax;$('mo').textContent=Math.floor(money).toLocaleString('fr-FR');$('cb').textContent=combo;$('sp').textContent=Math.round(Math.abs(bus.v)*3.6);
 }
 function draw(){
   const W=cv.width=cv.clientWidth,H=cv.height=cv.clientHeight;
@@ -532,7 +582,7 @@ let last=performance.now();
 
 cv.addEventListener('wheel',e=>{S=Math.max(2.5,Math.min(7,S*(e.deltaY<0?1.1:.9)))});
 $('nm').onclick=e=>{newMap();e.target.blur()};
-load();$('shop').onclick=shopClick;$('gb').onclick=toggleShop;$('mb').onclick=toggleMusic;$('sm').onclick=toggleSound;initTouch();newMap();
+load();$('shop').onclick=shopClick;$('gb').onclick=toggleShop;$('mb').onclick=toggleMusic;$('sm').onclick=toggleSound;initTouch();radioSet(0);newMap();
 if(off||bonus){money+=off+bonus;$('msg').textContent='Bon retour ! '+(bonus?'Série '+streak+' j : +'+bonus+' € ':'')+(off?'· bus autonomes : +'+off+' €':'');setTimeout(()=>$('msg').textContent='',7000)}
 renderShop();
 </script>
